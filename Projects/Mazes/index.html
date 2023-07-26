@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+    <script src="../../Libraries/p5js/p5.min.js"></script>
+    <script src="sketch.js" type="module" defer></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+
+</head>
+
+<body class="text-light" style="background-color: rgb(20, 20, 20);">
+    <div class="container">
+        <h1 style="color: white;">Mazes</h1>
+        <h2>Intro</h2>
+        <p src="intro.txt">About a month ago I had a student come to me with a seemingly simple assignment of creating a maze. There were few constraints but in this task I was required to create a maze that simply had a start in one corner and an end in the opposite with walls in between. "Okay no problem" I thought.. but then there was this part b. and a part c as well, and then some extra credit questions like adding on constraints like.. no loops, no dead ends, and so on as bonus questions. Interested in such an open ended yet simple task, I figured I'd give it a go myself with as many variants as I could imagine and program. This is the result.
+        </p>
+        <h2>Data</h2>
+        <h3>Binary Walls</h3>
+        <p>This may seem a bit blocky, but it's perhaps the simplest way I can imagine thinking of space. There either is a wall (black) or there isn't (white). Easy to render in a console.</p>
+        <h4>Random Walk</h4>
+        <p>Pick either north, south, east, or west and go!</p>
+        <center>
+            <main></main>
+            <button id="random_walk" class="btn btn-primary">Reset and Walk!</button>
+            <button id="random_walk_reset" class="btn btn-secondary">Reset</button>
+        </center>
+        <p>Steps: <span id="steps"></span></p>
+        <div id="cleared_warning" class="alert alert-primary d-none">Oh no it's broken! or wait no... the random walk just cleared everything. This is the potential downside to a truly random walk as it likely unintended. In many cases, it's possible for the walker to traverse every bit of wall in its destructive path and clear the whole maze. Bummer.</div>
+        <h4>Adventurous Walk</h4>
+        <p>Here we make sure to only take steps in directions that haven't been visited yet.</p>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
+</body>
+
+</html>
