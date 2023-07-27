@@ -1,14 +1,26 @@
-//@ts-check
+// @ts-check
 
-const canvasWidth = 768;
-const canvasHeight = 768;
-const cellSize = 64;
-const cellSpace = 4;
+/// @typedef import("../../node_modules/@types/p5/global.d.ts") {}
 
-// create an 8x8 grid world
-const world = new Array(12);
+const cellSize = 42;
+const cellSpace = 0;
+const cellWidth = 12;
+const cellHeight = 12;
+const canvasWidth = cellWidth * cellSize;
+const canvasHeight = cellHeight * cellSize;
+
+// directions
+let directions = [
+    [-1, 0], // left
+    [+1, 0], // right
+    [0, -1], // up
+    [0, +1], // down
+];
+
+// create a grid world
+const world = new Array(cellWidth);
 for (let i = 0; i < world.length; i++) {
-    world[i] = new Array(12);
+    world[i] = new Array(cellHeight);
 }
 
 // fill it with cell objects
@@ -55,6 +67,12 @@ for (let x = 0; x < world.length; x++) {
     }
 }
 
+// returns null if out of bounds, otherwise returns the cell
+/**
+ * @param {number} x
+ * @param {number} y
+ * @returns {null | {solid: boolean, sunlight: number, light: number, frontier: boolean, checked: boolean, x: number, y: number}}
+ **/
 function get_cell_safe(x, y) {
     if (x < 0 || x >= world.length || y < 0 || y >= world[x].length) {
         return null;
@@ -68,72 +86,62 @@ let frontier = [];
 for (let x = 0; x < world.length; x++) {
     let y = 0;
     while (y < world[x].length && world[x][y].solid === false) {
-        add_neighbors(x, y);
+        add_neighbors(x, y, false);
         y++;
     }
 }
-console.log(frontier);
 
-let iterations = 0;
-while (frontier.length > 0) {
-    // pop a cell from the frontier
-    let cell = frontier.pop();
-    cell.frontier = false;
-
-    // get the cell's neighbors
-    let left = get_cell_safe(cell.x - 1, cell.y);
-    let right = get_cell_safe(cell.x + 1, cell.y);
-    let up = get_cell_safe(cell.x, cell.y - 1);
-    let down = get_cell_safe(cell.x, cell.y + 1);
-
-    // calculate the light value for the cell
-    let sunlight = 0;
-    if (left !== null && left.sunlight > sunlight) {
-        sunlight = left.sunlight;
-    }
-    if (right !== null && right.sunlight > sunlight) {
-        sunlight = right.sunlight;
-    }
-    if (up !== null && up.sunlight > sunlight) {
-        sunlight = up.sunlight;
-    }
-    if (down !== null && down.sunlight > sunlight) {
-        sunlight = down.sunlight;
-    }
-
-    if (sunlight > cell.sunlight) {
-        cell.sunlight = sunlight - 1;
-        add_neighbors(cell.x, cell.y);
-    }
-
-    iterations++;
-    if (iterations > 500) {
-        console.log("too many iterations");
-        break;
+function keyPressed() {
+    if (keyCode === RIGHT_ARROW) {
+        iterate();
     }
 }
-console.log("Iterations", iterations);
 
-function add_neighbors(x, y) {
-    let left = get_cell_safe(x - 1, y);
-    let right = get_cell_safe(x + 1, y);
-    let up = get_cell_safe(x, y - 1);
-    let down = get_cell_safe(x, y + 1);
-    if (left !== null && !left.solid && left.checked === false && left.frontier === false) {
-        left.checked = true;
-        frontier.push(left);
+function iterate() {
+    // pop a cell from the frontier
+    let cell = frontier.pop();
+    if (cell === undefined) {
+        return;
     }
-    if (right !== null && !right.solid && right.checked === false && right.frontier === false) {
-        right.checked = true;
-        frontier.push(right);
+    cell.frontier = false;
+
+    // calculate the light value for the cell
+    let sunlight = cell.sunlight;
+    directions.forEach((direction) => {
+        let neighbor = get_cell_safe(
+            cell.x + direction[0],
+            cell.y + direction[1]
+        );
+        if (neighbor !== null) {
+            sunlight = Math.max(sunlight, neighbor.sunlight - 1);
+        }
+    });
+
+    if (sunlight > 0 && sunlight > cell.sunlight - 1) {
+        cell.sunlight = sunlight - 1;
+        add_neighbors(cell, true);
     }
-    if (up !== null && !up.solid && up.checked === false && up.frontier === false) {
-        up.checked = true;
-        frontier.push(up);
-    }
-    if (down !== null && !down.solid && down.checked === false && down.frontier === false) {
-        down.checked = true;
-        frontier.push(down);
+
+    cell.checked = true;
+}
+
+function add_neighbors(cell_centered, ignore_if_checked = false) {
+    for (let i = 0; i < directions.length; i++) {
+        let cell = get_cell_safe(
+            cell_centered.x + directions[i][0],
+            cell_centered.y + directions[i][1]
+        );
+
+        if (
+            cell !== null &&
+            cell.solid === false &&
+            (ignore_if_checked === true || cell.checked === false) &&
+            cell.frontier === false
+        ) {
+            cell.checked = false;
+            cell.frontier = true;
+            frontier.push(cell);
+        }
     }
 }
 
@@ -156,7 +164,8 @@ function preload() {
 function setup() {
     createCanvas(canvasWidth, canvasHeight, WEBGL);
     textFont(myFont);
-    textSize(24);
+    textSize(16);
+    noStroke();
 }
 
 function draw() {
@@ -168,23 +177,30 @@ function draw() {
     // draw the world
     for (let x = 0; x < world.length; x++) {
         for (let y = 0; y < world[x].length; y++) {
+            let xx = x * (cellSize + cellSpace) + cellSpace;
+            let yy = y * (cellSize + cellSpace) + cellSpace;
+
             if (world[x][y].solid) {
                 fill(20);
             } else {
                 fill(127, world[x][y].sunlight * 16, world[x][y].sunlight * 16);
             }
-            let xx = x * (cellSize + cellSpace) + cellSpace;
-            let yy = y * (cellSize + cellSpace) + cellSpace;
+
+            if (world[x][y] === frontier[frontier.length - 1]) {
+                fill(255, 0, 0);
+            }
 
             rect(xx, yy, cellSize, cellSize);
 
             fill(0);
             //fill(127, 255, 255);
-            text(world[x][y].sunlight, xx + 10, yy + 30);
+            text(world[x][y].sunlight, xx + 8, yy + 8 + 16);
             //fill(255, 150, 0);
             //text(world[x][y].light, xx + 10, yy + 50);
-            // fill(255, 127, 127);
-            // text(world[x][y].frontier ? "T" : "F", xx + 10, yy + 50);
+            fill(0, world[x][y].frontier ? 255 : 0, 0);
+            text(world[x][y].frontier ? "fT" : "fF", xx + 4, yy + 8 + 32);
+            fill(127);
+            text(world[x][y].checked ? "cT" : "cF", xx + 4 + 16, yy + 8 + 32);
         }
     }
 
@@ -225,3 +241,4 @@ export {};
 window.preload = preload;
 window.setup = setup;
 window.draw = draw;
+window.keyPressed = keyPressed;
